@@ -29,6 +29,9 @@ public class Main extends javax.swing.JFrame implements ItemListener {
         initComponents();
         
         cmbInterface.addItemListener(this);
+        
+        String storedIp = Preferences.get(Preferences.NETWORK_INTERFACE);
+        
     }
     
     @Override
@@ -48,6 +51,8 @@ public class Main extends javax.swing.JFrame implements ItemListener {
             }
             
             txtLog.setText(txtLog.getText() + ip + System.getProperty("line.separator"));
+            
+            Preferences.set(Preferences.NETWORK_INTERFACE, ip);
         }
     }
 
@@ -71,6 +76,16 @@ public class Main extends javax.swing.JFrame implements ItemListener {
             }
         }
         
+        return null;
+    }
+    
+    /**
+     * 
+     * @param ip
+     * @return 
+     */
+    public NetworkInterface getNetworkInterfaceByIp(String ip) {
+        // TODO
         return null;
     }
     
