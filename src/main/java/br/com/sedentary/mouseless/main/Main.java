@@ -2,8 +2,20 @@ package br.com.sedentary.mouseless.main;
 
 import br.com.sedentary.mouseless.server.Server;
 import com.corundumstudio.socketio.SocketIOClient;
+import java.awt.AWTException;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
+import java.awt.Toolkit;
+import java.awt.TrayIcon;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowStateListener;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -13,13 +25,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
+import javax.swing.JFrame;
 
 /**
  *
  * @author Rodrigo Gomes da Silva
  */
 public class Main extends javax.swing.JFrame implements ItemListener {
-
+    
+    private static JFrame frame;
+    private MenuItem startStopItem;
+    
     private Server server = null;
     
     /**
@@ -28,11 +44,83 @@ public class Main extends javax.swing.JFrame implements ItemListener {
     public Main() {
         initComponents();
         
+        createSystemTrayIcon();
+        
+        this.addWindowStateListener(windowStateListener);
+        
         cmbInterface.addItemListener(this);
         
         String storedIp = Preferences.get(Preferences.NETWORK_INTERFACE);
         
     }
+    
+    /**
+     * 
+     */
+    private void createSystemTrayIcon() {
+        //Check the SystemTray is supported
+        if (!SystemTray.isSupported()) {
+            System.out.println("SystemTray is not supported");
+            return;
+        }
+        final PopupMenu popup = new PopupMenu();
+        final TrayIcon trayIcon = new TrayIcon(Toolkit.getDefaultToolkit().getImage("/icon.png"), "Mouseless-Server");
+        trayIcon.setImageAutoSize(true);
+        trayIcon.addMouseListener(systemTrayOnClickListener);
+        final SystemTray tray = SystemTray.getSystemTray();
+        
+        // Create a pop-up menu components
+        startStopItem = new MenuItem((server != null && server.isConnected()) == true ? "Parar" : "Iniciar");
+        MenuItem exitItem = new MenuItem("Exit");
+        
+        startStopItem.addActionListener(startStopItemOnClickListener);
+        exitItem.addActionListener(exitItemOnClickListener);
+       
+        //Add components to pop-up menu
+        popup.add(startStopItem);
+        popup.add(exitItem);
+       
+        trayIcon.setPopupMenu(popup);
+        
+        try {
+            tray.add(trayIcon);
+        } catch (AWTException e) {
+            System.out.println("TrayIcon could not be added.");
+        }
+    }
+    
+    /**
+     * 
+     */
+    MouseAdapter systemTrayOnClickListener = new MouseAdapter() {
+
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            frame.setVisible(true);
+        }
+    };
+    
+    /**
+     * 
+     */
+    ActionListener exitItemOnClickListener = new ActionListener() {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            System.exit(0);
+        }
+    };
+    
+    /**
+     * 
+     */
+    ActionListener startStopItemOnClickListener = new ActionListener() {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            startStopServer();
+        }
+    };
     
     @Override
     public void itemStateChanged(ItemEvent ie) {
@@ -170,7 +258,18 @@ public class Main extends javax.swing.JFrame implements ItemListener {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    /**
+     * 
+     * @param evt 
+     */
     private void btnStartStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStartStopActionPerformed
+        startStopServer();
+    }//GEN-LAST:event_btnStartStopActionPerformed
+
+    /**
+     * 
+     */
+    public void startStopServer() {
         if (server == null || (server != null && !server.isConnected())) {
             NetworkInterface ntInterface = (NetworkInterface) cmbInterface.getSelectedItem();
             server = new Server(
@@ -181,23 +280,28 @@ public class Main extends javax.swing.JFrame implements ItemListener {
         } else {
             server.stop();
         }
-    }//GEN-LAST:event_btnStartStopActionPerformed
-
+    }
+    
+    /**
+     * 
+     */
     private final Server.Callback serverCallback = new Server.Callback() {
 
         @Override
         public void connected(SocketIOClient client) {
             btnStartStop.setText("Parar");
+            startStopItem.setLabel("Parar");
         }
 
         @Override
         public void disconnected() {
             btnStartStop.setText("Iniciar");
+            startStopItem.setLabel("Iniciar");
         }
 
         @Override
         public void log(String text) {
-            txtLog.setText(txtLog.getText() + text + System.getProperty("line.separator"));
+            logAppInfo(text);
         }
     };
     
@@ -230,10 +334,34 @@ public class Main extends javax.swing.JFrame implements ItemListener {
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
+            @Override
             public void run() {
-                new Main().setVisible(true);
+                frame = new Main();
+                frame.setVisible(true);
             }
         });
+    }
+    
+    /**
+     * 
+     */
+    private final WindowStateListener windowStateListener = new WindowStateListener() {
+        
+        @Override
+        public void windowStateChanged(WindowEvent e) {
+            if (e.getNewState() == ICONIFIED) {
+                frame.setVisible(false);
+            }
+        }
+    };
+    
+    /**
+     * 
+     * @param log
+     */
+    private void logAppInfo(String log) {
+        txtLog.setText(txtLog.getText() + log + System.getProperty("line.separator"));
+        txtLog.setCaretPosition(txtLog.getDocument().getLength());
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -247,6 +375,10 @@ public class Main extends javax.swing.JFrame implements ItemListener {
     // End of variables declaration//GEN-END:variables
 }
 
+/**
+ * 
+ * @author Rodrigo Gomes da Silva
+ */
 class NetworkInterfaceComboBoxModel extends DefaultComboBoxModel {
     NetworkInterfaceComboBoxModel() {
         super();

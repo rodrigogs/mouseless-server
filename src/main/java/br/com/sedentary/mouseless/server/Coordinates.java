@@ -45,8 +45,8 @@ public class Coordinates {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("x: ").append(this.x.toString());
-        sb.append("y: ").append(this.y.toString());
+        sb.append("x: ").append(this.x.toString()).append(" ");
+        sb.append("y: ").append(this.y.toString()).append(" ");
         sb.append("z: ").append(this.z.toString());
         
         return sb.toString();
