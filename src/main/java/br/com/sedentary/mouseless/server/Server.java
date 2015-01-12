@@ -29,7 +29,7 @@ public class Server {
     private String host = null;
     private Integer port = null;
     
-    private Boolean connected = false;
+    private Boolean running = false;
     
     /**
      * 
@@ -61,11 +61,20 @@ public class Server {
 
         // Star server
         LOGGER.info("Inicializando o servidor");
-        server.start();
         
-        callback.log("Servidor inicializado com sucesso");
-        callback.log("Endereço: " + server.getConfiguration().getHostname());
-        callback.log("Porta: " + String.valueOf(server.getConfiguration().getPort()));
+        try {
+            server.start();
+            
+            ServerInfo serverInfo = new ServerInfo(
+                    server.getConfiguration().getHostname(),
+                    server.getConfiguration().getPort());
+            callback.serverStarted(serverInfo);
+            
+            running = true;
+        } catch (Exception ex) {
+            callback.error(ex.getMessage());
+            running = false;
+        }
     }
     
     /**
@@ -73,14 +82,17 @@ public class Server {
      */
     public void stop() {
        server.stop();
+       callback.serverStoped();
+       
+       running = false;
     }
     
     /**
      * 
      * @return 
      */
-    public Boolean isConnected() {
-        return connected;
+    public Boolean isRunning() {
+        return running;
     }
     
     /**
@@ -102,15 +114,13 @@ public class Server {
      */
     private SocketIOServer setServerListeners(SocketIOServer server) {
         LOGGER.info("Configurando eventos do servidor");
-
+        
         LOGGER.info("Configurando evento de conexão");
         server.addConnectListener(new ConnectListener() {
 
             @Override
             public void onConnect(SocketIOClient client) {
                 callback.connected(client);
-                
-                connected = true;
             }
         });
 
@@ -120,8 +130,6 @@ public class Server {
             @Override
             public void onDisconnect(SocketIOClient client) {
                 callback.disconnected();
-                
-                connected = false;
             }
         });
         
@@ -130,7 +138,7 @@ public class Server {
             
             @Override
             public void onData(SocketIOClient client, Coordinates coords, AckRequest request) throws Exception {
-                callback.log("Coords: " + coords.toString());
+                callback.receivedCoordinates(coords);
                 
                 Integer[] coordinates = new Integer[2];
                 coordinates[0] = coords.x.intValue();
@@ -144,7 +152,7 @@ public class Server {
             
             @Override
             public void onData(SocketIOClient client, MouseClickType type, AckRequest request) throws Exception {
-                callback.log("Mouseclick: " + type.toString());
+                callback.receivedMouseClick(type);
                 
                 mouse.click(type);
             }
@@ -159,6 +167,45 @@ public class Server {
     public interface Callback {
         void connected(SocketIOClient client);
         void disconnected();
-        void log(String text);
+        void serverStarted(ServerInfo serverInfo);
+        void serverStoped();
+        void receivedCoordinates(Coordinates coords);
+        void receivedMouseClick(MouseClickType type);
+        void error(String error);
+    }
+    
+    /**
+     * 
+     */
+    public class ServerInfo {
+        private final String hostname;
+        private final Integer port;
+        
+        /**
+         * 
+         * @param hostname
+         * @param port 
+         */
+        public ServerInfo(String hostname, Integer port) {
+            this.hostname = hostname;
+            this.port = port;
+        }
+        
+        public String getHostname() {
+            return hostname;
+        }
+
+        public Integer getPort() {
+            return port;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Host name: ").append(this.hostname).append(System.getProperty("line.separator"));
+            sb.append("Port: ").append(this.port);
+            
+            return sb.toString();
+        }
     }
 }

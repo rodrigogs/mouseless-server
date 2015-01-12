@@ -1,12 +1,13 @@
 package br.com.sedentary.mouseless.main;
 
+import br.com.sedentary.mouseless.mouse.MouseClickType;
+import br.com.sedentary.mouseless.server.Coordinates;
 import br.com.sedentary.mouseless.server.Server;
 import com.corundumstudio.socketio.SocketIOClient;
 import java.awt.AWTException;
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
 import java.awt.SystemTray;
-import java.awt.Toolkit;
 import java.awt.TrayIcon;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -31,7 +32,7 @@ import javax.swing.JFrame;
  *
  * @author Rodrigo Gomes da Silva
  */
-public class Main extends javax.swing.JFrame implements ItemListener {
+public class Main extends javax.swing.JFrame {
     
     private static JFrame frame;
     private MenuItem startStopItem;
@@ -44,14 +45,39 @@ public class Main extends javax.swing.JFrame implements ItemListener {
     public Main() {
         initComponents();
         
+        loadPreferences();
+        
         createSystemTrayIcon();
         
         this.addWindowStateListener(windowStateListener);
         
-        cmbInterface.addItemListener(this);
-        
+        cmbInterface.addItemListener(itemListener);
+    }
+    
+    /**
+     * 
+     */
+    private void loadPreferences() {
+        // Load network interface configuration
         String storedIp = Preferences.get(Preferences.NETWORK_INTERFACE);
+        if (storedIp != null) {
+            try {
+                NetworkInterface ni = findNetworkInterfaceByIp(storedIp);
+                if (ni != null) {
+                    cmbInterface.setSelectedItem(ni);
+                }
+            } catch (SocketException ex) {
+                logAppInfo("Não foi possível carregar a configuração");
+                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
         
+        // Load server port configuration
+        Integer port = (Integer) Preferences.get(Preferences.SERVER_PORT, Integer.class, null);
+        if (port == null) {
+            port = Server.DEFAULT_SERVER_PORT;
+        }
+        spnPort.setValue(port);
     }
     
     /**
@@ -64,13 +90,14 @@ public class Main extends javax.swing.JFrame implements ItemListener {
             return;
         }
         final PopupMenu popup = new PopupMenu();
-        final TrayIcon trayIcon = new TrayIcon(Toolkit.getDefaultToolkit().getImage("/icon.png"), "Mouseless-Server");
+        final TrayIcon trayIcon;
+        trayIcon = new TrayIcon(new ImageIcon(getClass().getResource("/icon.png")).getImage(), "Mouseless-Server");
         trayIcon.setImageAutoSize(true);
         trayIcon.addMouseListener(systemTrayOnClickListener);
         final SystemTray tray = SystemTray.getSystemTray();
         
         // Create a pop-up menu components
-        startStopItem = new MenuItem((server != null && server.isConnected()) == true ? "Parar" : "Iniciar");
+        startStopItem = new MenuItem((server != null && server.isRunning()) == true ? "Parar" : "Iniciar");
         MenuItem exitItem = new MenuItem("Exit");
         
         startStopItem.addActionListener(startStopItemOnClickListener);
@@ -122,27 +149,33 @@ public class Main extends javax.swing.JFrame implements ItemListener {
         }
     };
     
-    @Override
-    public void itemStateChanged(ItemEvent ie) {
-        if (ie.getStateChange() == ItemEvent.SELECTED) {
-            NetworkInterface ntInterface = (NetworkInterface) ie.getItem();
-            String ip = getNetworkInterfaceIpAddress(ntInterface);
-            if (ip != null) {
-                if (server == null || (server != null && !server.isConnected())) {
-                    btnStartStop.setEnabled(true);
+    /**
+     * 
+     */
+    ItemListener itemListener = new ItemListener() {
+        
+        @Override
+        public void itemStateChanged(ItemEvent ie) {
+            if (ie.getStateChange() == ItemEvent.SELECTED) {
+                NetworkInterface ntInterface = (NetworkInterface) ie.getItem();
+                String ip = getNetworkInterfaceIpAddress(ntInterface);
+                if (ip != null) {
+                    if (server == null || (server != null && !server.isRunning())) {
+                        btnStartStop.setEnabled(true);
+                    }
+                } else {
+                    if (server == null || (server != null && !server.isRunning())) {
+                        btnStartStop.setEnabled(false);
+                    }
+                    ip = "Interface não possui uma coniguração de IP válida";
                 }
-            } else {
-                if (server == null || (server != null && !server.isConnected())) {
-                    btnStartStop.setEnabled(false);
-                }
-                ip = "Interface não possui uma coniguração de IP válida";
-            }
             
             txtLog.setText(txtLog.getText() + ip + System.getProperty("line.separator"));
             
             Preferences.set(Preferences.NETWORK_INTERFACE, ip);
+            }
         }
-    }
+    };
 
     /**
      * 
@@ -171,9 +204,22 @@ public class Main extends javax.swing.JFrame implements ItemListener {
      * 
      * @param ip
      * @return 
+     * @throws java.net.SocketException 
      */
-    public NetworkInterface getNetworkInterfaceByIp(String ip) {
-        // TODO
+    public NetworkInterface findNetworkInterfaceByIp(String ip) throws SocketException {
+        Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
+        while(e.hasMoreElements()) {
+            NetworkInterface ni = e.nextElement();
+            for (Enumeration enumIpAddr = ni.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                InetAddress inetAddress = (InetAddress) enumIpAddr.nextElement();
+                if (!inetAddress.isLoopbackAddress() && inetAddress instanceof Inet4Address) {
+                    if (inetAddress.getHostAddress().equals(ip)) {
+                        return ni;
+                    }
+               }
+            }
+        }
+        
         return null;
     }
     
@@ -270,15 +316,20 @@ public class Main extends javax.swing.JFrame implements ItemListener {
      * 
      */
     public void startStopServer() {
-        if (server == null || (server != null && !server.isConnected())) {
+        
+        if (server == null || (server != null && !server.isRunning())) {
+            
             NetworkInterface ntInterface = (NetworkInterface) cmbInterface.getSelectedItem();
             server = new Server(
                     getNetworkInterfaceIpAddress(ntInterface),
                     Integer.parseInt(spnPort.getValue().toString()),
                     serverCallback);
             server.start();
+            
         } else {
+            
             server.stop();
+            
         }
     }
     
@@ -289,19 +340,44 @@ public class Main extends javax.swing.JFrame implements ItemListener {
 
         @Override
         public void connected(SocketIOClient client) {
-            btnStartStop.setText("Parar");
-            startStopItem.setLabel("Parar");
+            logAppInfo("Conectado à: " + client.getHandshakeData().getUrl());
         }
 
         @Override
         public void disconnected() {
-            btnStartStop.setText("Iniciar");
-            startStopItem.setLabel("Iniciar");
+            logAppInfo("Desconectado");
         }
 
         @Override
-        public void log(String text) {
-            logAppInfo(text);
+        public void serverStarted(Server.ServerInfo serverInfo) {
+            btnStartStop.setText("Parar");
+            startStopItem.setLabel("Parar");
+            
+            logAppInfo("Servidor iniciado");
+            logAppInfo(serverInfo.toString());
+        }
+
+        @Override
+        public void serverStoped() {
+            btnStartStop.setText("Iniciar");
+            startStopItem.setLabel("Iniciar");
+            
+            logAppInfo("Servidor encerrado");
+        }
+
+        @Override
+        public void receivedCoordinates(Coordinates coords) {
+            logAppInfo("Corrdenadas: " + coords);
+        }
+
+        @Override
+        public void receivedMouseClick(MouseClickType type) {
+            logAppInfo("Click: " + type);
+        }
+
+        @Override
+        public void error(String error) {
+            logAppInfo("Erro: " + error);
         }
     };
     
@@ -321,15 +397,11 @@ public class Main extends javax.swing.JFrame implements ItemListener {
                     break;
                 }
             }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(Main.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(Main.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(Main.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
             java.util.logging.Logger.getLogger(Main.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
+        //</editor-fold>
+        
         //</editor-fold>
 
         /* Create and display the form */
