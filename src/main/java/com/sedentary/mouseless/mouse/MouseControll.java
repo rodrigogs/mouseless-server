@@ -1,4 +1,4 @@
-package br.com.sedentary.mouseless.mouse;
+package com.sedentary.mouseless.mouse;
 
 import java.awt.AWTException;
 import java.awt.MouseInfo;

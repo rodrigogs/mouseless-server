@@ -1,9 +1,9 @@
-package br.com.sedentary.mouseless.server;
+package com.sedentary.mouseless.server;
 
 import java.util.logging.Logger;
 
-import br.com.sedentary.mouseless.mouse.MouseClickType;
-import br.com.sedentary.mouseless.mouse.MouseControll;
+import com.sedentary.mouseless.mouse.MouseClickType;
+import com.sedentary.mouseless.mouse.MouseControll;
 
 import com.corundumstudio.socketio.AckRequest;
 import com.corundumstudio.socketio.Configuration;

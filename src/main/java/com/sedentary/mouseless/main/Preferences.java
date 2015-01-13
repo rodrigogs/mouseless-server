@@ -1,7 +1,7 @@
 /**
  * 
  */
-package br.com.sedentary.mouseless.main;
+package com.sedentary.mouseless.main;
 
 /**
  *

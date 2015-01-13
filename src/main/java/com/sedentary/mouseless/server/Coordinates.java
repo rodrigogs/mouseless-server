@@ -1,4 +1,4 @@
-package br.com.sedentary.mouseless.server;
+package com.sedentary.mouseless.server;
 
 /**
  * @author Rodrigo Gomes da Silva

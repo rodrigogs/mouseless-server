@@ -1,8 +1,8 @@
-package br.com.sedentary.mouseless.main;
+package com.sedentary.mouseless.main;
 
-import br.com.sedentary.mouseless.mouse.MouseClickType;
-import br.com.sedentary.mouseless.server.Coordinates;
-import br.com.sedentary.mouseless.server.Server;
+import com.sedentary.mouseless.mouse.MouseClickType;
+import com.sedentary.mouseless.server.Coordinates;
+import com.sedentary.mouseless.server.Server;
 import com.corundumstudio.socketio.SocketIOClient;
 import java.awt.AWTException;
 import java.awt.MenuItem;
