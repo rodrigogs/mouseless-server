@@ -320,11 +320,17 @@ public class Main extends javax.swing.JFrame {
         if (server == null || (server != null && !server.isRunning())) {
             
             NetworkInterface ntInterface = (NetworkInterface) cmbInterface.getSelectedItem();
-            server = new Server(
-                    getNetworkInterfaceIpAddress(ntInterface),
-                    Integer.parseInt(spnPort.getValue().toString()),
-                    serverCallback);
-            server.start();
+            String ip = getNetworkInterfaceIpAddress(ntInterface);
+            
+            if (ip != null) {
+                server = new Server(
+                        getNetworkInterfaceIpAddress(ntInterface),
+                        Integer.parseInt(spnPort.getValue().toString()),
+                        serverCallback);
+                server.start();
+            } else {
+                logAppInfo("Selecione uma interface com configuração de IP válida");
+            }
             
         } else {
             
@@ -340,7 +346,7 @@ public class Main extends javax.swing.JFrame {
 
         @Override
         public void connected(SocketIOClient client) {
-            logAppInfo("Conectado à: " + client.getHandshakeData().getUrl());
+            logAppInfo("Conectado à: " + client.getHandshakeData().getAddress());
         }
 
         @Override
@@ -367,12 +373,12 @@ public class Main extends javax.swing.JFrame {
 
         @Override
         public void receivedCoordinates(Coordinates coords) {
-            logAppInfo("Corrdenadas: " + coords);
+//            logAppInfo("Corrdenadas: " + coords);
         }
 
         @Override
         public void receivedMouseClick(MouseClickType type) {
-            logAppInfo("Click: " + type);
+//            logAppInfo("Click: " + type);
         }
 
         @Override
