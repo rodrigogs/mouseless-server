@@ -28,3 +28,18 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.10'
     compile 'com.corundumstudio.socketio:netty-socketio:1.7.5'
 }
+
+jar {
+    from {
+       configurations.compile.collect {
+           it.isDirectory() ? it : zipTree(it)
+       }
+       configurations.runtime.collect {
+           it.isDirectory() ? it : zipTree(it)
+       }
+    }
+    
+    manifest {
+        attributes 'Main-Class': 'br.com.sedentary.mouseless.main.Main'
+    }
+}
