@@ -1,6 +1,4 @@
-# Mouseless Server
-
-[![Build Status](https://travis-ci.org/rodrigogs/mouseless-server.svg?branch=master)](https://travis-ci.org/rodrigogs/mouseless-server)
+# Mouseless Server [![Build Status](https://travis-ci.org/rodrigogs/mouseless-server.svg?branch=master)](https://travis-ci.org/rodrigogs/mouseless-server)
 
 Java application that uses mrniko's [netty-socketio](https://github.com/mrniko/netty-socketio) for communication with [Mouseless for Android](https://github.com/rodrigogs/mouseless)
 
