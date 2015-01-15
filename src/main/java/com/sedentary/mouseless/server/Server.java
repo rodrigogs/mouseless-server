@@ -12,6 +12,8 @@ import com.corundumstudio.socketio.SocketIOServer;
 import com.corundumstudio.socketio.listener.ConnectListener;
 import com.corundumstudio.socketio.listener.DataListener;
 import com.corundumstudio.socketio.listener.DisconnectListener;
+import java.text.MessageFormat;
+import java.util.ResourceBundle;
 
 /**
  * @author Rodrigo Gomes da Silva
@@ -28,6 +30,7 @@ public class Server {
 
     private String host = null;
     private Integer port = null;
+    private static final ResourceBundle i18nMessages = ResourceBundle.getBundle("i18n/messages");
     
     private Boolean running = false;
     
@@ -60,7 +63,7 @@ public class Server {
         server = setServerListeners(server);
 
         // Star server
-        LOGGER.info("Inicializando o servidor");
+        LOGGER.info(i18nMessages.getString("server.initializing"));
         
         try {
             server.start();
@@ -99,7 +102,7 @@ public class Server {
      * @return
      */
     private Configuration getServerConfiguration() {
-        LOGGER.info("Gerando configuração do servidor");
+        LOGGER.info(i18nMessages.getString("server.generating.server.configuration"));
 	
         Configuration config = new Configuration();
         
@@ -113,9 +116,9 @@ public class Server {
      * @param server
      */
     private SocketIOServer setServerListeners(SocketIOServer server) {
-        LOGGER.info("Configurando eventos do servidor");
+        LOGGER.info(i18nMessages.getString("server.generating.server.events"));
         
-        LOGGER.info("Configurando evento de conexão");
+        LOGGER.info(i18nMessages.getString("server.generating.server.connection.events"));
         server.addConnectListener(new ConnectListener() {
 
             @Override
@@ -124,7 +127,7 @@ public class Server {
             }
         });
 
-        LOGGER.info("Configurando evento de desconexão");
+        LOGGER.info(i18nMessages.getString("server.generating.disconnection.event"));
         server.addDisconnectListener(new DisconnectListener() {
 
             @Override
@@ -133,7 +136,7 @@ public class Server {
             }
         });
         
-        LOGGER.info("Configurando evento de coordenadas");
+        LOGGER.info(i18nMessages.getString("server.generating.server.coordinate.event"));
         server.addEventListener("coordinate", Coordinates.class, new DataListener<Coordinates>() {
             
             @Override
@@ -147,7 +150,7 @@ public class Server {
             }
         });
         
-        LOGGER.info("Configurando evento de mouseclick");
+        LOGGER.info(i18nMessages.getString("server.generating.server.mouseclick.event"));
         server.addEventListener("mouseclick", MouseClickType.class, new DataListener<MouseClickType>() {
             
             @Override
@@ -202,8 +205,8 @@ public class Server {
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
-            sb.append("Host name: ").append(this.hostname).append(System.getProperty("line.separator"));
-            sb.append("Port: ").append(this.port);
+            sb.append(MessageFormat.format(ResourceBundle.getBundle("i18n/messages").getString("server.hostname"), new Object[] {this.hostname}));
+            sb.append(MessageFormat.format(ResourceBundle.getBundle("i18n/messages").getString("server.port"), new Object[] {this.port}));
             
             return sb.toString();
         }

@@ -21,7 +21,9 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.text.MessageFormat;
 import java.util.Enumeration;
+import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
@@ -33,6 +35,8 @@ import javax.swing.JFrame;
  * @author Rodrigo Gomes da Silva
  */
 public class Main extends javax.swing.JFrame {
+    
+    private static final ResourceBundle i18nMessages = ResourceBundle.getBundle("i18n/messages");
     
     private static JFrame frame;
     private MenuItem startStopItem;
@@ -67,7 +71,7 @@ public class Main extends javax.swing.JFrame {
                     cmbInterface.setSelectedItem(ni);
                 }
             } catch (SocketException ex) {
-                logAppInfo("Não foi possível carregar a configuração");
+                logAppInfo(i18nMessages.getString("main.configuration.load.failed"));
                 Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
@@ -86,19 +90,19 @@ public class Main extends javax.swing.JFrame {
     private void createSystemTrayIcon() {
         //Check the SystemTray is supported
         if (!SystemTray.isSupported()) {
-            System.out.println("SystemTray is not supported");
+            System.out.println(i18nMessages.getString("main.systemtray.not.supported"));
             return;
         }
         final PopupMenu popup = new PopupMenu();
         final TrayIcon trayIcon;
-        trayIcon = new TrayIcon(new ImageIcon(getClass().getResource("/icon.png")).getImage(), "Mouseless-Server");
+        trayIcon = new TrayIcon(new ImageIcon(getClass().getResource("/images/icon.png")).getImage(), "Mouseless-Server");
         trayIcon.setImageAutoSize(true);
         trayIcon.addMouseListener(systemTrayOnClickListener);
         final SystemTray tray = SystemTray.getSystemTray();
         
         // Create a pop-up menu components
-        startStopItem = new MenuItem((server != null && server.isRunning()) == true ? "Parar" : "Iniciar");
-        MenuItem exitItem = new MenuItem("Exit");
+        startStopItem = new MenuItem((server != null && server.isRunning()) == true ? i18nMessages.getString("main.stop") : i18nMessages.getString("main.start"));
+        MenuItem exitItem = new MenuItem(i18nMessages.getString("main.exit"));
         
         startStopItem.addActionListener(startStopItemOnClickListener);
         exitItem.addActionListener(exitItemOnClickListener);
@@ -112,7 +116,7 @@ public class Main extends javax.swing.JFrame {
         try {
             tray.add(trayIcon);
         } catch (AWTException e) {
-            System.out.println("TrayIcon could not be added.");
+            System.out.println(i18nMessages.getString("main.trayicon.not.added"));
         }
     }
     
@@ -167,7 +171,7 @@ public class Main extends javax.swing.JFrame {
                     if (server == null || (server != null && !server.isRunning())) {
                         btnStartStop.setEnabled(false);
                     }
-                    ip = "Interface não possui uma coniguração de IP válida";
+                    ip = i18nMessages.getString("main.interface.invalid.ip.configuration");
                 }
             
             txtLog.setText(txtLog.getText() + ip + System.getProperty("line.separator"));
@@ -241,17 +245,17 @@ public class Main extends javax.swing.JFrame {
         spnPort = new javax.swing.JSpinner();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Mouseless Server");
-        setIconImage(new ImageIcon(getClass().getResource("/icon.png")).getImage());
+        setTitle(i18nMessages.getString("app.name")); // NOI18N
+        setIconImage(new ImageIcon(getClass().getResource("/images/icon.png")).getImage());
         setMinimumSize(new java.awt.Dimension(360, 210));
         setName("frmMain"); // NOI18N
 
-        lblInterface.setText("Interface:");
+        lblInterface.setText(i18nMessages.getString("main.lblInterface.text")); // NOI18N
 
         cmbInterface.setModel(new NetworkInterfaceComboBoxModel());
-        cmbInterface.setToolTipText("Selecione uma interface de rede");
+        cmbInterface.setToolTipText(i18nMessages.getString("main.cmbInterface.tooltip")); // NOI18N
 
-        btnStartStop.setText("Iniciar");
+        btnStartStop.setText(i18nMessages.getString("main.start")); // NOI18N
         btnStartStop.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnStartStopActionPerformed(evt);
@@ -263,7 +267,7 @@ public class Main extends javax.swing.JFrame {
         txtLog.setRows(5);
         scrlLog.setViewportView(txtLog);
 
-        lblPort.setText("Porta:");
+        lblPort.setText(i18nMessages.getString("main.lblPort.text")); // NOI18N
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -329,7 +333,7 @@ public class Main extends javax.swing.JFrame {
                         serverCallback);
                 server.start();
             } else {
-                logAppInfo("Selecione uma interface com configuração de IP válida");
+                logAppInfo(i18nMessages.getString("main.select.valid.configuration.interface"));
             }
             
         } else {
@@ -346,29 +350,29 @@ public class Main extends javax.swing.JFrame {
 
         @Override
         public void connected(SocketIOClient client) {
-            logAppInfo("Conectado à: " + client.getHandshakeData().getAddress());
+            logAppInfo(MessageFormat.format(ResourceBundle.getBundle("i18n/messages").getString("main.connected.to"), new Object[] {client.getHandshakeData().getAddress()}));
         }
 
         @Override
         public void disconnected() {
-            logAppInfo("Desconectado");
+            logAppInfo(i18nMessages.getString("main.disconnected"));
         }
 
         @Override
         public void serverStarted(Server.ServerInfo serverInfo) {
-            btnStartStop.setText("Parar");
-            startStopItem.setLabel("Parar");
+            btnStartStop.setText(i18nMessages.getString("main.start"));
+            startStopItem.setLabel(i18nMessages.getString("main.stop"));
             
-            logAppInfo("Servidor iniciado");
+            logAppInfo(i18nMessages.getString("main.server.started"));
             logAppInfo(serverInfo.toString());
         }
 
         @Override
         public void serverStoped() {
-            btnStartStop.setText("Iniciar");
-            startStopItem.setLabel("Iniciar");
+            btnStartStop.setText(i18nMessages.getString("main.start"));
+            startStopItem.setLabel(i18nMessages.getString("main.start"));
             
-            logAppInfo("Servidor encerrado");
+            logAppInfo(i18nMessages.getString("main.server.stoped"));
         }
 
         @Override
@@ -383,7 +387,7 @@ public class Main extends javax.swing.JFrame {
 
         @Override
         public void error(String error) {
-            logAppInfo("Erro: " + error);
+            logAppInfo(MessageFormat.format(ResourceBundle.getBundle("i18n/messages").getString("main.error"), new Object[] {error}));
         }
     };
     
@@ -458,6 +462,8 @@ public class Main extends javax.swing.JFrame {
  * @author Rodrigo Gomes da Silva
  */
 class NetworkInterfaceComboBoxModel extends DefaultComboBoxModel {
+    private static final ResourceBundle i18nMessages = ResourceBundle.getBundle("i18n/messages");
+    
     NetworkInterfaceComboBoxModel() {
         super();
         try {
@@ -467,7 +473,7 @@ class NetworkInterfaceComboBoxModel extends DefaultComboBoxModel {
                 addElement(ni);
             }
         } catch(SocketException e) {
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Can't get network interfaces", e);
+            Logger.getLogger(getClass().getName()).log(Level.SEVERE, i18nMessages.getString("main.cant.get.network.interfaces"), e);
         }
     }
 }
