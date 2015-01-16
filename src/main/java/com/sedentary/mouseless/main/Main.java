@@ -245,10 +245,12 @@ public class Main extends javax.swing.JFrame {
         spnPort = new javax.swing.JSpinner();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle(i18nMessages.getString("app.name")); // NOI18N
+        setTitle(java.text.MessageFormat.format(java.util.ResourceBundle.getBundle("i18n/messages").getString("app.nameWithVersion"), new Object[] {this.getClass().getPackage().getImplementationVersion()})); // NOI18N
         setIconImage(new ImageIcon(getClass().getResource("/images/icon.png")).getImage());
-        setMinimumSize(new java.awt.Dimension(360, 210));
+        setMaximumSize(null);
+        setMinimumSize(new java.awt.Dimension(310, 250));
         setName("frmMain"); // NOI18N
+        setPreferredSize(new java.awt.Dimension(310, 250));
 
         lblInterface.setText(i18nMessages.getString("main.lblInterface.text")); // NOI18N
 
@@ -269,6 +271,9 @@ public class Main extends javax.swing.JFrame {
 
         lblPort.setText(i18nMessages.getString("main.lblPort.text")); // NOI18N
 
+        spnPort.setModel(new javax.swing.SpinnerNumberModel(Integer.valueOf(0), null, Integer.valueOf(47808), Integer.valueOf(1)));
+        spnPort.setEditor(new javax.swing.JSpinner.NumberEditor(spnPort, "#####"));
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -284,7 +289,7 @@ public class Main extends javax.swing.JFrame {
                             .addComponent(spnPort, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addComponent(btnStartStop, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(scrlLog, javax.swing.GroupLayout.DEFAULT_SIZE, 336, Short.MAX_VALUE))
+                    .addComponent(scrlLog, javax.swing.GroupLayout.DEFAULT_SIZE, 330, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -301,9 +306,11 @@ public class Main extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnStartStop)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(scrlLog, javax.swing.GroupLayout.DEFAULT_SIZE, 110, Short.MAX_VALUE)
+                .addComponent(scrlLog, javax.swing.GroupLayout.DEFAULT_SIZE, 109, Short.MAX_VALUE)
                 .addContainerGap())
         );
+
+        getAccessibleContext().setAccessibleDescription("");
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -455,25 +462,23 @@ public class Main extends javax.swing.JFrame {
     private javax.swing.JSpinner spnPort;
     private javax.swing.JTextArea txtLog;
     // End of variables declaration//GEN-END:variables
-}
 
-/**
- * 
- * @author Rodrigo Gomes da Silva
- */
-class NetworkInterfaceComboBoxModel extends DefaultComboBoxModel {
-    private static final ResourceBundle i18nMessages = ResourceBundle.getBundle("i18n/messages");
-    
-    NetworkInterfaceComboBoxModel() {
-        super();
-        try {
-            Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
-            while(e.hasMoreElements()) {
-                NetworkInterface ni = e.nextElement();
-                addElement(ni);
+    /**
+     * 
+     * @author Rodrigo Gomes da Silva
+     */
+    class NetworkInterfaceComboBoxModel extends DefaultComboBoxModel {
+        NetworkInterfaceComboBoxModel() {
+            super();
+            try {
+                Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
+                while(e.hasMoreElements()) {
+                    NetworkInterface ni = e.nextElement();
+                    addElement(ni);
+                }
+            } catch(SocketException e) {
+                Logger.getLogger(getClass().getName()).log(Level.SEVERE, i18nMessages.getString("main.cant.get.network.interfaces"), e);
             }
-        } catch(SocketException e) {
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, i18nMessages.getString("main.cant.get.network.interfaces"), e);
         }
     }
 }
