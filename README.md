@@ -5,6 +5,6 @@ Java application that uses mrniko's [netty-socketio](https://github.com/mrniko/n
 Just select the right network interface for communication with your device(must to be connected to the same network), set the server's port and it's good to go.
 
 # TODO
-* Internationalization
+* Internationalization :white_check_mark:
 * Bluetooth Communication
 * QR Code generator for automatic Android app configuration
