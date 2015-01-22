@@ -4,7 +4,15 @@ import com.sedentary.mouseless.mouse.MouseClickType;
 import com.sedentary.mouseless.server.Coordinates;
 import com.sedentary.mouseless.server.Server;
 import com.corundumstudio.socketio.SocketIOClient;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import java.awt.AWTException;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
 import java.awt.SystemTray;
@@ -17,18 +25,22 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowStateListener;
+import java.awt.image.BufferedImage;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.text.MessageFormat;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 
 /**
  *
@@ -248,9 +260,9 @@ public class Main extends javax.swing.JFrame {
         setTitle(java.text.MessageFormat.format(java.util.ResourceBundle.getBundle("i18n/messages").getString("app.nameWithVersion"), new Object[] {this.getClass().getPackage().getImplementationVersion()})); // NOI18N
         setIconImage(new ImageIcon(getClass().getResource("/images/icon.png")).getImage());
         setMaximumSize(null);
-        setMinimumSize(new java.awt.Dimension(310, 250));
+        setMinimumSize(new java.awt.Dimension(450, 300));
         setName("frmMain"); // NOI18N
-        setPreferredSize(new java.awt.Dimension(310, 250));
+        setPreferredSize(new java.awt.Dimension(450, 300));
 
         lblInterface.setText(i18nMessages.getString("main.lblInterface.text")); // NOI18N
 
@@ -282,14 +294,14 @@ public class Main extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(cmbInterface, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnStartStop, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(scrlLog, javax.swing.GroupLayout.DEFAULT_SIZE, 326, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(lblInterface)
                             .addComponent(lblPort)
                             .addComponent(spnPort, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addComponent(btnStartStop, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(scrlLog, javax.swing.GroupLayout.DEFAULT_SIZE, 330, Short.MAX_VALUE))
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -306,7 +318,7 @@ public class Main extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnStartStop)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(scrlLog, javax.swing.GroupLayout.DEFAULT_SIZE, 109, Short.MAX_VALUE)
+                .addComponent(scrlLog, javax.swing.GroupLayout.DEFAULT_SIZE, 104, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -367,11 +379,26 @@ public class Main extends javax.swing.JFrame {
 
         @Override
         public void serverStarted(Server.ServerInfo serverInfo) {
-            btnStartStop.setText(i18nMessages.getString("main.start"));
+            btnStartStop.setText(i18nMessages.getString("main.stop"));
             startStopItem.setLabel(i18nMessages.getString("main.stop"));
             
             logAppInfo(i18nMessages.getString("main.server.started"));
             logAppInfo(serverInfo.toString());
+            
+            try {
+                BufferedImage qrCode = createQrCode(serverInfo);
+                JDialog floatOnParent = new JDialog(frame, false);
+                JLabel qr = new JLabel(new ImageIcon(qrCode));
+                floatOnParent.getContentPane().add(qr);
+
+                floatOnParent.setBounds(frame.getX(), frame.getY(), 300, 300);
+                floatOnParent.setVisible(true);
+                
+                logAppInfo(i18nMessages.getString("main.qrCode.message"));
+            } catch (WriterException ex) {
+                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                logAppInfo(i18nMessages.getString("main.qrCode.error.message"));
+            }
         }
 
         @Override
@@ -397,6 +424,40 @@ public class Main extends javax.swing.JFrame {
             logAppInfo(MessageFormat.format(ResourceBundle.getBundle("i18n/messages").getString("main.error"), new Object[] {error}));
         }
     };
+    
+    /**
+     * 
+     * @param info 
+     */
+    private BufferedImage createQrCode(Server.ServerInfo info) throws WriterException {
+        String codeText = info.getHostname() + ":" + info.getPort();
+        Integer size = 300;
+
+        HashMap hintMap = new HashMap();
+        hintMap.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L);
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        BitMatrix byteMatrix = qrCodeWriter.encode(codeText, BarcodeFormat.QR_CODE, size, size, hintMap);
+        // Make the BufferedImage that are to hold the QRCode
+        Integer matrixWidth = byteMatrix.getWidth();
+        BufferedImage image = new BufferedImage(matrixWidth, matrixWidth, BufferedImage.TYPE_INT_RGB);
+        image.createGraphics();
+
+        Graphics2D graphics = (Graphics2D) image.getGraphics();
+        graphics.setColor(Color.WHITE);
+        graphics.fillRect(0, 0, matrixWidth, matrixWidth);
+        // Paint and save the image using the ByteMatrix
+        graphics.setColor(Color.BLACK);
+
+        for (int i = 0; i < matrixWidth; i++) {
+            for (int j = 0; j < matrixWidth; j++) {
+                if (byteMatrix.get(i, j)) {
+                    graphics.fillRect(i, j, 1, 1);
+                }
+            }
+        }
+        
+        return image;
+    }
     
     /**
      * @param args the command line arguments

@@ -204,9 +204,14 @@ public class Server {
 
         @Override
         public String toString() {
+            String breakLine = System.getProperty("line.separator");
             StringBuilder sb = new StringBuilder();
-            sb.append(MessageFormat.format(ResourceBundle.getBundle("i18n/messages").getString("server.hostname"), new Object[] {this.hostname}));
-            sb.append(MessageFormat.format(ResourceBundle.getBundle("i18n/messages").getString("server.port"), new Object[] {this.port}));
+            sb.append(MessageFormat.format(
+                    ResourceBundle.getBundle("i18n/messages").getString("server.hostname"),
+                    new Object[] {this.hostname})).append(breakLine);
+            sb.append(MessageFormat.format(
+                    ResourceBundle.getBundle("i18n/messages").getString("server.port"),
+                    new Object[] {this.port})).append(breakLine);
             
             return sb.toString();
         }
