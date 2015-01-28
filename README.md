@@ -9,4 +9,4 @@ Just select the right network interface for communication with your device(must 
 # TODO
 * Internationalization :white_check_mark:
 * Bluetooth Communication
-* QR Code generator for automatic Android app configuration
+* QR Code generator for automatic Android app configuration :white_check_mark:
