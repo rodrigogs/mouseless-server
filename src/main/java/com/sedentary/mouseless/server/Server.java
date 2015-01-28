@@ -34,6 +34,8 @@ public class Server {
     
     private Boolean running = false;
     
+    private ServerInfo serverInfo = null;
+    
     /**
      * 
      * @param host
@@ -68,9 +70,10 @@ public class Server {
         try {
             server.start();
             
-            ServerInfo serverInfo = new ServerInfo(
+            serverInfo = new ServerInfo(
                     server.getConfiguration().getHostname(),
                     server.getConfiguration().getPort());
+            
             callback.serverStarted(serverInfo);
             
             running = true;
@@ -87,6 +90,8 @@ public class Server {
        server.stop();
        callback.serverStoped();
        
+       serverInfo = null;
+       
        running = false;
     }
     
@@ -96,6 +101,13 @@ public class Server {
      */
     public Boolean isRunning() {
         return running;
+    }
+    
+    /**
+     * 
+     */
+    public ServerInfo getServerInfo() {
+       return serverInfo; 
     }
     
     /**

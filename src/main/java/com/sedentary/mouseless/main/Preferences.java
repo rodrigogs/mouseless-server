@@ -120,12 +120,12 @@ public class Preferences {
                 pr = prefs.getByteArray(p, (byte[]) defaultValue);
             } else if (c.isInstance((double) 0)) {
                 pr = prefs.getDouble(p, (double) defaultValue);
-            } else if (c.isInstance((float) defaultValue)) {
-                pr = prefs.getFloat(p, 0);
-            } else if (c.isInstance((int) defaultValue)) {
-                pr = prefs.getInt(p, 0);
-            } else if (c.isInstance((long) defaultValue)) {
-                pr = prefs.getLong(p, 0);
+            } else if (c.isInstance(Float.class)) {
+                pr = prefs.getFloat(p, (float) defaultValue);
+            } else if (c.isInstance((int) 0)) {
+                pr = prefs.getInt(p, (int) defaultValue);
+            } else if (c.isInstance((long) 0)) {
+                pr = prefs.getLong(p, (long) defaultValue);
             }
 
             return pr;

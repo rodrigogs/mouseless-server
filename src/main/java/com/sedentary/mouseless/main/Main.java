@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JDialog;
@@ -68,6 +69,8 @@ public class Main extends javax.swing.JFrame {
         this.addWindowStateListener(windowStateListener);
         
         cmbInterface.addItemListener(itemListener);
+        
+        btnShowQrCode.setVisible(false);
     }
     
     /**
@@ -80,7 +83,15 @@ public class Main extends javax.swing.JFrame {
             try {
                 NetworkInterface ni = findNetworkInterfaceByIp(storedIp);
                 if (ni != null) {
-                    cmbInterface.setSelectedItem(ni);
+                    ComboBoxModel model = cmbInterface.getModel();
+                    
+                    int size = model.getSize();
+                    for (Integer i = 0; i < size; i++) {
+                        ComboNetworkItem element = (ComboNetworkItem) model.getElementAt(i);
+                        if (element.getIp() != null && element.getIp().equals(storedIp)) {
+                            cmbInterface.setSelectedItem(element);
+                        }
+                    }
                 }
             } catch (SocketException ex) {
                 logAppInfo(i18nMessages.getString("main.configuration.load.failed"));
@@ -89,10 +100,7 @@ public class Main extends javax.swing.JFrame {
         }
         
         // Load server port configuration
-        Integer port = (Integer) Preferences.get(Preferences.SERVER_PORT, Integer.class, null);
-        if (port == null) {
-            port = Server.DEFAULT_SERVER_PORT;
-        }
+        Integer port = (Integer) Preferences.get(Preferences.SERVER_PORT, Integer.class, Server.DEFAULT_SERVER_PORT);
         spnPort.setValue(port);
     }
     
@@ -173,8 +181,8 @@ public class Main extends javax.swing.JFrame {
         @Override
         public void itemStateChanged(ItemEvent ie) {
             if (ie.getStateChange() == ItemEvent.SELECTED) {
-                NetworkInterface ntInterface = (NetworkInterface) ie.getItem();
-                String ip = getNetworkInterfaceIpAddress(ntInterface);
+                NetworkInterface ntInterface = ((ComboNetworkItem) ie.getItem()).getNetworkInterface();
+                String ip = findNetworkInterfaceIpAddress(ntInterface);
                 if (ip != null) {
                     if (server == null || (server != null && !server.isRunning())) {
                         btnStartStop.setEnabled(true);
@@ -186,9 +194,7 @@ public class Main extends javax.swing.JFrame {
                     ip = i18nMessages.getString("main.interface.invalid.ip.configuration");
                 }
             
-            txtLog.setText(txtLog.getText() + ip + System.getProperty("line.separator"));
-            
-            Preferences.set(Preferences.NETWORK_INTERFACE, ip);
+                Preferences.set(Preferences.NETWORK_INTERFACE, ip);
             }
         }
     };
@@ -198,7 +204,7 @@ public class Main extends javax.swing.JFrame {
      * @param ni
      * @return 
      */
-    private String getNetworkInterfaceIpAddress(NetworkInterface ni) {
+    private String findNetworkInterfaceIpAddress(NetworkInterface ni) {
         Enumeration e = ni.getInetAddresses();
         
         if (!e.hasMoreElements()) {
@@ -255,6 +261,8 @@ public class Main extends javax.swing.JFrame {
         txtLog = new javax.swing.JTextArea();
         lblPort = new javax.swing.JLabel();
         spnPort = new javax.swing.JSpinner();
+        btnShowQrCode = new javax.swing.JButton();
+        btnRefreshNtInterfaces = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle(java.text.MessageFormat.format(java.util.ResourceBundle.getBundle("i18n/messages").getString("app.nameWithVersion"), new Object[] {this.getClass().getPackage().getImplementationVersion()})); // NOI18N
@@ -285,6 +293,27 @@ public class Main extends javax.swing.JFrame {
 
         spnPort.setModel(new javax.swing.SpinnerNumberModel(Integer.valueOf(0), null, Integer.valueOf(47808), Integer.valueOf(1)));
         spnPort.setEditor(new javax.swing.JSpinner.NumberEditor(spnPort, "#####"));
+        spnPort.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                spnPortStateChanged(evt);
+            }
+        });
+
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("i18n/messages"); // NOI18N
+        btnShowQrCode.setText(bundle.getString("main.btnShowQrCode.text")); // NOI18N
+        btnShowQrCode.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnShowQrCodeActionPerformed(evt);
+            }
+        });
+
+        btnRefreshNtInterfaces.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/refresh-icon.png"))); // NOI18N
+        btnRefreshNtInterfaces.setToolTipText(bundle.getString("main.btnRefreshNtInterfaces.tooltip")); // NOI18N
+        btnRefreshNtInterfaces.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRefreshNtInterfacesActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -293,15 +322,21 @@ public class Main extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(cmbInterface, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(btnStartStop, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(scrlLog, javax.swing.GroupLayout.DEFAULT_SIZE, 326, Short.MAX_VALUE)
+                    .addComponent(scrlLog, javax.swing.GroupLayout.DEFAULT_SIZE, 426, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(spnPort, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnShowQrCode))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(lblInterface)
-                            .addComponent(lblPort)
-                            .addComponent(spnPort, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                            .addComponent(lblPort))
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(cmbInterface, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnRefreshNtInterfaces)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -310,15 +345,19 @@ public class Main extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(lblInterface)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(cmbInterface, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(cmbInterface, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnRefreshNtInterfaces))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(lblPort)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(spnPort, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(spnPort, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnShowQrCode))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnStartStop)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(scrlLog, javax.swing.GroupLayout.DEFAULT_SIZE, 104, Short.MAX_VALUE)
+                .addComponent(scrlLog, javax.swing.GroupLayout.DEFAULT_SIZE, 122, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -335,6 +374,19 @@ public class Main extends javax.swing.JFrame {
         startStopServer();
     }//GEN-LAST:event_btnStartStopActionPerformed
 
+    private void btnShowQrCodeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnShowQrCodeActionPerformed
+        showQrCode(server.getServerInfo());
+    }//GEN-LAST:event_btnShowQrCodeActionPerformed
+
+    private void btnRefreshNtInterfacesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRefreshNtInterfacesActionPerformed
+        cmbInterface.setModel(new NetworkInterfaceComboBoxModel());
+        loadPreferences();
+    }//GEN-LAST:event_btnRefreshNtInterfacesActionPerformed
+
+    private void spnPortStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spnPortStateChanged
+        Preferences.set(Preferences.SERVER_PORT, spnPort.getValue());
+    }//GEN-LAST:event_spnPortStateChanged
+
     /**
      * 
      */
@@ -342,12 +394,12 @@ public class Main extends javax.swing.JFrame {
         
         if (server == null || (server != null && !server.isRunning())) {
             
-            NetworkInterface ntInterface = (NetworkInterface) cmbInterface.getSelectedItem();
-            String ip = getNetworkInterfaceIpAddress(ntInterface);
+            NetworkInterface ntInterface = ((ComboNetworkItem) cmbInterface.getSelectedItem()).getNetworkInterface();
+            String ip = findNetworkInterfaceIpAddress(ntInterface);
             
             if (ip != null) {
                 server = new Server(
-                        getNetworkInterfaceIpAddress(ntInterface),
+                        ip,
                         Integer.parseInt(spnPort.getValue().toString()),
                         serverCallback);
                 server.start();
@@ -359,6 +411,26 @@ public class Main extends javax.swing.JFrame {
             
             server.stop();
             
+        }
+    }
+    
+    /**
+     * 
+     */
+    private void showQrCode(Server.ServerInfo serverInfo) {
+        try {
+            BufferedImage qrCode = createQrCode(serverInfo);
+            JDialog floatOnParent = new JDialog(frame, false);
+            JLabel qr = new JLabel(new ImageIcon(qrCode));
+            floatOnParent.getContentPane().add(qr);
+
+            floatOnParent.setBounds(frame.getX(), frame.getY(), 300, 300);
+            floatOnParent.setVisible(true);
+                
+            logAppInfo(i18nMessages.getString("main.qrCode.message"));
+        } catch (WriterException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            logAppInfo(i18nMessages.getString("main.qrCode.error.message"));
         }
     }
     
@@ -382,29 +454,18 @@ public class Main extends javax.swing.JFrame {
             btnStartStop.setText(i18nMessages.getString("main.stop"));
             startStopItem.setLabel(i18nMessages.getString("main.stop"));
             
+            btnShowQrCode.setVisible(true);
+            
             logAppInfo(i18nMessages.getString("main.server.started"));
             logAppInfo(serverInfo.toString());
-            
-            try {
-                BufferedImage qrCode = createQrCode(serverInfo);
-                JDialog floatOnParent = new JDialog(frame, false);
-                JLabel qr = new JLabel(new ImageIcon(qrCode));
-                floatOnParent.getContentPane().add(qr);
-
-                floatOnParent.setBounds(frame.getX(), frame.getY(), 300, 300);
-                floatOnParent.setVisible(true);
-                
-                logAppInfo(i18nMessages.getString("main.qrCode.message"));
-            } catch (WriterException ex) {
-                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-                logAppInfo(i18nMessages.getString("main.qrCode.error.message"));
-            }
         }
 
         @Override
         public void serverStoped() {
             btnStartStop.setText(i18nMessages.getString("main.start"));
             startStopItem.setLabel(i18nMessages.getString("main.start"));
+            
+            btnShowQrCode.setVisible(false);
             
             logAppInfo(i18nMessages.getString("main.server.stoped"));
         }
@@ -515,6 +576,8 @@ public class Main extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnRefreshNtInterfaces;
+    private javax.swing.JButton btnShowQrCode;
     private javax.swing.JButton btnStartStop;
     private javax.swing.JComboBox cmbInterface;
     private javax.swing.JLabel lblInterface;
@@ -528,6 +591,41 @@ public class Main extends javax.swing.JFrame {
      * 
      * @author Rodrigo Gomes da Silva
      */
+    class ComboNetworkItem {
+        private String ip;
+        private NetworkInterface networkInterface;
+        
+        public ComboNetworkItem(NetworkInterface ni) {
+            this.ip = findNetworkInterfaceIpAddress(ni);
+            this.networkInterface = ni;
+        }
+
+        public String getIp() {
+            return ip;
+        }
+
+        public void setIp(String ip) {
+            this.ip = ip;
+        }
+
+        public NetworkInterface getNetworkInterface() {
+            return networkInterface;
+        }
+
+        public void setNetworkInterface(NetworkInterface networkInterface) {
+            this.networkInterface = networkInterface;
+        }
+
+        @Override
+        public String toString() {
+            return this.ip;
+        }
+    }
+    
+    /**
+     * 
+     * @author Rodrigo Gomes da Silva
+     */
     class NetworkInterfaceComboBoxModel extends DefaultComboBoxModel {
         NetworkInterfaceComboBoxModel() {
             super();
@@ -535,7 +633,12 @@ public class Main extends javax.swing.JFrame {
                 Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
                 while(e.hasMoreElements()) {
                     NetworkInterface ni = e.nextElement();
-                    addElement(ni);
+                    if (findNetworkInterfaceIpAddress(ni) != null) {
+                        ComboNetworkItem item = new ComboNetworkItem(ni);
+                    
+                    
+                        addElement(item);
+                    }
                 }
             } catch(SocketException e) {
                 Logger.getLogger(getClass().getName()).log(Level.SEVERE, i18nMessages.getString("main.cant.get.network.interfaces"), e);

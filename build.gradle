@@ -42,6 +42,6 @@ jar {
     
     manifest {
         attributes( "Main-Class": "com.sedentary.mouseless.main.Main",
-                    "Implementation-Version": "1.3")
+                    "Implementation-Version": "1.4")
     }
 }
